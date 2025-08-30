@@ -23,7 +23,7 @@ app.use(
       if (!origin || allowedOrigins.includes(origin)) return cb(null, true);
       return cb(new Error("CORS blocked",+origin));
     },
-    credentials: true;
+    credentials: true,
   })
 );
 
