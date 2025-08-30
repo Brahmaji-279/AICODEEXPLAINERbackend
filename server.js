@@ -20,10 +20,15 @@ const allowedOrigins = [
 app.use(
   cors({
     origin: (origin, cb) => {
-      if (!origin || allowedOrigins.includes(origin)) return cb(null, true);
-      return cb(new Error("CORS blocked",+origin));
+      if (
+        !origin ||                           // allow server-to-server or local
+        origin.includes("vercel.app") ||     // allow any Vercel frontend
+        origin.includes("localhost")         // allow local dev
+      ) {
+        return cb(null, true);
+      }
+      return cb(new Error("CORS blocked: " + origin));
     },
-    credentials: true,
   })
 );
 
