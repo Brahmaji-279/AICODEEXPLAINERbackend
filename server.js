@@ -11,10 +11,10 @@ app.use(express.json({ limit: "1mb" }));
 
 // Allow your Vercel site + local dev
 const allowedOrigins = [
-  process.env.ALLOWED_ORIGIN || "",          // e.g. https://aicodeexplainer.vercel.app
+  process.env.ALLOWED_ORIGIN || "", 
+  "https://aicodeexplainer-ta5o.vercel.app/", // e.g. https://aicodeexplainer.vercel.app
   "http://localhost:3000",
   "http://localhost:5173",
-  "https://aicodeexplainer-mokt.vercel.app/"
 ].filter(Boolean);
 
 app.use(
