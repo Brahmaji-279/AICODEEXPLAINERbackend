@@ -14,14 +14,16 @@ const allowedOrigins = [
   process.env.ALLOWED_ORIGIN || "",          // e.g. https://aicodeexplainer.vercel.app
   "http://localhost:3000",
   "http://localhost:5173",
+  "https://aicodeexplainer-mokt.vercel.app/"
 ].filter(Boolean);
 
 app.use(
   cors({
     origin: (origin, cb) => {
       if (!origin || allowedOrigins.includes(origin)) return cb(null, true);
-      return cb(new Error("CORS blocked"));
+      return cb(new Error("CORS blocked",+origin));
     },
+    credentials: true;
   })
 );
 
