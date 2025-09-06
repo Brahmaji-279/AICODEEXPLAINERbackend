@@ -1,75 +1,62 @@
-// backend/server.js
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import OpenAI from "openai";
 
 dotenv.config();
-
 const app = express();
-app.use(express.json({ limit: "1mb" }));
 
-// Allow your Vercel site + local dev
+// ✅ Allow both localhost (dev) and deployed Vercel frontend
 const allowedOrigins = [
-  process.env.ALLOWED_ORIGIN || "", 
-  "https://aicodeexplainer-vu3y.vercel.app/", // e.g. https://aicodeexplainer.vercel.app
-  "http://localhost:3000",
-  "http://localhost:5173",
-].filter(Boolean);
+  "http://localhost:3000", // local dev
+  "https://your-frontend.vercel.app", // replace with your Vercel frontend URL
+];
 
 app.use(
   cors({
-    origin: (origin, cb) => {
-      if (
-        !origin ||                           // allow server-to-server or local
-        origin.includes("vercel.app") ||     // allow any Vercel frontend
-        origin.includes("localhost")         // allow local dev
-      ) {
-        return cb(null, true);
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
       }
-      return cb(new Error("CORS blocked: " + origin));
     },
   })
 );
 
-// Health check (Render can use this)
-app.get("/health", (_req, res) => res.status(200).send("ok"));
+app.use(express.json());
 
-// ---------- OpenRouter client (recommended free/low-cost gateway) ----------
+// OpenRouter client setup
 const client = new OpenAI({
   apiKey: process.env.OPENROUTER_API_KEY,
   baseURL: "https://openrouter.ai/api/v1",
-  // optional but recommended for OpenRouter analytics
-  defaultHeaders: {
-    "HTTP-Referer": process.env.PUBLIC_URL || "http://localhost",
-    "X-Title": "AI Code Explainer",
-  },
 });
 
 // API endpoint
 app.post("/api/openai", async (req, res) => {
   try {
     const { code, userPrompt } = req.body;
-    const finalPrompt = `You are an AI coding assistant. The user pasted this code:\n\n${code}\n\nTask: ${userPrompt}`;
 
-    const model = process.env.OPENROUTER_MODEL || "openai/gpt-4o-mini";
+    if (!userPrompt) {
+      return res.status(400).json({ error: "Prompt is required" });
+    }
+
+    const finalPrompt = `You are an AI coding assistant. 
+The user pasted this code:\n\n${code}\n\nTask: ${userPrompt}`;
 
     const response = await client.chat.completions.create({
-      model,
+      model: "mistralai/mistral-7b-instruct",
       messages: [{ role: "user", content: finalPrompt }],
-      temperature: 0.2,
     });
 
-    res.json({ result: response.choices?.[0]?.message?.content ?? "" });
-  } catch (err) {
-    console.error("API error:", err?.response?.data || err.message);
-    const msg =
-      err?.response?.data?.error?.message ||
-      err?.message ||
-      "Something went wrong";
-    res.status(500).json({ error: msg });
+    res.json({ result: response.choices[0].message.content });
+  } catch (error) {
+    console.error("❌ Backend error:", error.message || error);
+    res.status(500).json({ error: "Something went wrong" });
   }
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`✅ Server listening on ${PORT}`));
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () =>
+  console.log(`🚀 Server running at http://localhost:${PORT}`)
+);
